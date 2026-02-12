@@ -1,0 +1,135 @@
+{
+  "styles": {
+    "purple": {
+      "name": "紫色经典",
+      "title_color": "#8064a9",
+      "text_color": "#444444",
+      "quote_bg": "#f4f2f9",
+      "quote_border": "rgba(116, 95, 181, 0.5)",
+      "link_color": "#2aa899",
+      "font": "'Open Sans', sans-serif",
+      "description": "优雅专业，适合科技深度文章"
+    },
+    "purple-blue": {
+      "name": "紫蓝渐变",
+      "title_color": "#6366f1",
+      "text_color": "#444444",
+      "quote_bg": "#eef2ff",
+      "quote_border": "#6366f1",
+      "link_color": "#4f46e5",
+      "font": "'Open Sans', sans-serif",
+      "description": "现代感强，适合AI/科技主题"
+    },
+    "purple-green": {
+      "name": "紫绿清新",
+      "title_color": "#059669",
+      "text_color": "#444444",
+      "quote_bg": "#ecfdf5",
+      "quote_border": "#059669",
+      "link_color": "#10b981",
+      "font": "'Open Sans', sans-serif",
+      "description": "清新活泼，适合工具评测"
+    },
+    "purple-cesno": {
+      "name": "Cesno紫",
+      "title_color": "#7c3aed",
+      "text_color": "#374151",
+      "quote_bg": "#f5f3ff",
+      "quote_border": "#7c3aed",
+      "link_color": "#8b5cf6",
+      "font": "'Open Sans', sans-serif",
+      "description": "高端大气，适合重磅发布"
+    },
+    "purple-classic": {
+      "name": "经典紫",
+      "title_color": "#6b21a8",
+      "text_color": "#1f2937",
+      "quote_bg": "#faf5ff",
+      "quote_border": "#6b21a8",
+      "link_color": "#9333ea",
+      "font": "'Open Sans', sans-serif",
+      "description": "稳重专业，适合深度分析"
+    },
+    "purple-plain": {
+      "name": "素雅紫",
+      "title_color": "#9ca3af",
+      "text_color": "#4b5563",
+      "quote_bg": "#f9fafb",
+      "quote_border": "#d1d5db",
+      "link_color": "#6b7280",
+      "font": "'Open Sans', sans-serif",
+      "description": "低调内敛，适合日常更新"
+    },
+    "orangeheart": {
+      "name": "橙心暖色",
+      "title_color": "#ef7060",
+      "text_color": "#000000",
+      "quote_bg": "#fff5f5",
+      "quote_border": "#ef7060",
+      "link_color": "#ef7060",
+      "font": "Optima, 'PingFang SC', serif",
+      "h2_style": "background",
+      "description": "温暖醒目，适合热点解读"
+    },
+    "github": {
+      "name": "GitHub风格",
+      "title_color": "#333333",
+      "text_color": "#333333",
+      "quote_bg": "#f6f8fa",
+      "quote_border": "#dfe2e5",
+      "link_color": "#4183c4",
+      "font": "'Open Sans', 'Helvetica Neue', sans-serif",
+      "description": "简洁技术风，适合代码教程"
+    },
+    "gothic": {
+      "name": "哥特风格",
+      "title_color": "#2c3e50",
+      "text_color": "#34495e",
+      "quote_bg": "#ecf0f1",
+      "quote_border": "#2c3e50",
+      "link_color": "#3498db",
+      "font": "Georgia, serif",
+      "description": "庄重大气，适合行业分析"
+    },
+    "newsprint": {
+      "name": "报纸风格",
+      "title_color": "#8b4513",
+      "text_color": "#333333",
+      "quote_bg": "#faf8f5",
+      "quote_border": "#d4c4a8",
+      "link_color": "#8b4513",
+      "font": "'PT Serif', Georgia, serif",
+      "description": "复古报刊风，适合新闻资讯"
+    },
+    "pixyll": {
+      "name": "Pixyll极简",
+      "title_color": "#515151",
+      "text_color": "#515151",
+      "quote_bg": "#f9f9f9",
+      "quote_border": "#e5e5e5",
+      "link_color": "#268bd2",
+      "font": "Lato, sans-serif",
+      "description": "极简主义，适合长文阅读"
+    },
+    "whitey": {
+      "name": "简白风格",
+      "title_color": "#333333",
+      "text_color": "#555555",
+      "quote_bg": "#fafafa",
+      "quote_border": "#eeeeee",
+      "link_color": "#0066cc",
+      "font": "'Helvetica Neue', sans-serif",
+      "description": "干净清爽，通用性强"
+    },
+    "dyzj-light": {
+      "name": "淡雅风格",
+      "title_color": "#5b9bd5",
+      "text_color": "#444444",
+      "quote_bg": "#f0f7ff",
+      "quote_border": "#5b9bd5",
+      "link_color": "#5b9bd5",
+      "font": "'PingFang SC', sans-serif",
+      "description": "柔和舒适，适合知识分享"
+    }
+  }
+}

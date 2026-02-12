@@ -4,7 +4,6 @@
 
 # ============ 配置 ============
 # 通过环境变量提供（推荐：使用 .env + `set -a; source .env; set +a`）
-: "${R2_BUCKET:=wechat-article-images}"
 
 require_cmd() {
     command -v "$1" >/dev/null 2>&1 || {
@@ -118,22 +117,6 @@ wait_for_image() {
     fi
 }
 
-# ============ R2 图片上传 ============
-
-# 上传图片到 R2
-# 用法: upload_to_r2 <local_path> <remote_path>
-upload_to_r2() {
-    require_cmd wrangler || return 1
-    require_env R2_PUBLIC_URL || return 1
-    local local_path=$1
-    local remote_path=$2
-    if ! wrangler r2 object put "${R2_BUCKET}/${remote_path}" --file="${local_path}"; then
-        echo "ERROR: failed to upload to R2" >&2
-        return 1
-    fi
-    echo "${R2_PUBLIC_URL}/${remote_path}"
-}
-
 # 下载图片
 # 用法: download_image <url> <output_path>
 download_image() {
@@ -145,13 +128,13 @@ download_image() {
 
 # ============ 完整流程 ============
 
-# 生成并上传封面图
-# 用法: create_cover_image <prompt> <article_id>
-create_cover_image() {
+# 生成封面图文件（本地临时文件）
+# 用法: create_cover_file <prompt> <article_id>
+create_cover_file() {
     require_cmd jq || return 1
     local prompt=$1
     local article_id=$2
-    local tmp_file="/tmp/cover_${article_id}.png"
+    local tmp_file="/tmp/wechat_cover_${article_id}.png"
 
     echo "正在生成封面图..."
     local response=$(generate_image "${prompt}" "16:9")
@@ -170,20 +153,23 @@ create_cover_image() {
             echo "ERROR: failed to download image" >&2
             return 1
         fi
+        echo "$tmp_file"
+        return 0
+    fi
 
-        echo "正在上传到 R2..."
-        local r2_url
-        if ! r2_url=$(upload_to_r2 "$tmp_file" "articles/${article_id}/cover.png"); then
+    if [[ -n "${DEFAULT_COVER_URL:-}" ]]; then
+        echo "封面图生成失败，使用 DEFAULT_COVER_URL 下载兜底封面..."
+        if ! download_image "$DEFAULT_COVER_URL" "$tmp_file"; then
             rm -f "$tmp_file"
+            echo "ERROR: failed to download DEFAULT_COVER_URL" >&2
             return 1
         fi
-
-        rm -f "$tmp_file"
-        echo "$r2_url"
-    else
-        echo "ERROR: Failed to generate image"
-        return 1
+        echo "$tmp_file"
+        return 0
     fi
+
+    echo "ERROR: Failed to generate cover and no DEFAULT_COVER_URL provided" >&2
+    return 1
 }
 
 # 完整发布流程
@@ -209,29 +195,17 @@ publish_article() {
 
     # 2. 生成封面图
     echo "2. 生成封面图..."
-    local cover_url=$(create_cover_image "$cover_prompt" "$article_id")
-    if [[ -z "$cover_url" || "$cover_url" == "ERROR"* ]]; then
-        if [[ -n "${DEFAULT_COVER_URL:-}" ]]; then
-            cover_url="$DEFAULT_COVER_URL"
-            echo "   封面图生成失败，使用 DEFAULT_COVER_URL"
-        else
-            echo "ERROR: 封面图生成失败，且未配置 DEFAULT_COVER_URL"
-            return 1
-        fi
+    local cover_file
+    if ! cover_file=$(create_cover_file "$cover_prompt" "$article_id"); then
+        return 1
     fi
-    echo "   封面图: $cover_url"
+    echo "   封面图文件: $cover_file"
 
     # 3. 下载并上传封面到公众号
     echo "3. 上传封面到公众号素材库..."
-    local tmp_cover="/tmp/wechat_cover_${article_id}.png"
-    if ! download_image "$cover_url" "$tmp_cover"; then
-        rm -f "$tmp_cover"
-        echo "ERROR: failed to download cover for wechat upload" >&2
-        return 1
-    fi
-    local media_response=$(upload_wechat_image "$token" "$tmp_cover")
+    local media_response=$(upload_wechat_image "$token" "$cover_file")
     local thumb_media_id=$(echo "$media_response" | jq -r '.media_id')
-    rm -f "$tmp_cover"
+    rm -f "$cover_file"
 
     if [[ -z "$thumb_media_id" || "$thumb_media_id" == "null" ]]; then
         echo "ERROR: 上传封面失败"
@@ -279,6 +253,5 @@ publish_article() {
 echo "脚本已加载。可用函数:"
 echo "  get_wechat_token        - 获取公众号 access_token"
 echo "  generate_image          - 生成图片 (Nano Banana Pro)"
-echo "  upload_to_r2            - 上传图片到 R2"
-echo "  create_cover_image      - 生成并上传封面图"
+echo "  create_cover_file       - 生成封面图文件"
 echo "  publish_article         - 完整发布流程"

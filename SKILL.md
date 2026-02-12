@@ -1,17 +1,8 @@
 ---
 name: wechat-ai-publisher
 description: 自动采集 AI 热门内容，撰写公众号文章，生成配图并发布到微信公众号草稿箱。当用户说"发布AI热点"、"写公众号文章"、"采集AI内容"、"publish AI news"时触发。
-allowed-tools:
-  - Read
-  - Write
-  - Bash
-  - WebFetch
-  - WebSearch
-  - Glob
-  - Grep
-  - AskUserQuestion
-  - mcp__exa__web_search_exa
-  - mcp__tavily__tavily-search
+homepage: https://github.com/bbwdadfg/wechat-ai-publisher
+metadata: {"openclaw":{"emoji":"📰","requires":{"bins":["bash","curl","jq"]}}}
 ---
 
 # 微信公众号 AI 热点自动发布工具
@@ -27,13 +18,11 @@ allowed-tools:
        ↓
 4. 调用 nanobanana API 生成配图
        ↓
-5. 上传图片到 Cloudflare R2 图床
+5. 上传图片到微信服务器（获取 mmbiz URL）
        ↓
-6. 上传图片到微信服务器（获取 mmbiz URL）
+6. 转换为 HTML 并发布到公众号草稿箱
        ↓
-7. 转换为 HTML 并发布到公众号草稿箱
-       ↓
-8. 提示用户去微信公众号后台检查文章
+7. 提示用户去微信公众号后台检查文章
 ```
 
 ---
@@ -44,11 +33,6 @@ allowed-tools:
 
 - **AppID**: `WECHAT_APPID`（通过环境变量配置）
 - **AppSecret**: `WECHAT_SECRET`（通过环境变量配置）
-
-### Cloudflare R2 图床
-
-- **Bucket**: `R2_BUCKET`（通过环境变量配置）
-- **公开 URL**: `R2_PUBLIC_URL`（通过环境变量配置）
 
 ### 图片生成 API
 
@@ -80,7 +64,15 @@ allowed-tools:
 
 **设计思路**：不同主题、风格、配图数量会影响后续所有步骤，所以先收集用户偏好。
 
-使用 AskUserQuestion 工具询问：
+如果是交互式运行，可以询问用户；如果是定时任务/自动运行（比如 OpenClaw Cron），则**不要提问**，直接从触发消息里解析参数或使用默认值。
+
+支持的参数（建议写在触发语句中）：
+- `主题`：例如 `AI工具` / `大模型` / `AI Agent`
+- `风格`：例如 `purple` / `orangeheart` / `github`
+- `配图`：例如 `仅封面` / `封面+2张` / `封面+3张`
+- `作者`：例如 `田威 AI`（会映射到环境变量 `WECHAT_AUTHOR`）
+
+交互式询问（可选）：
 
 **问题 1 - 文章主题**：
 - AI Agent
@@ -343,41 +335,7 @@ python3 ~/.codex/skills/article-illustrator/scripts/generate_image.py \
 
 ---
 
-### Step 5: 上传图片到 Cloudflare R2
-
-**设计思路**：
-- **为什么要上传到 R2？** 作为备份，防止微信图片丢失；方便在其他平台复用
-- **为什么用时间戳做文件夹？** 自动生成唯一 ID，避免文件名冲突
-- **为什么必须加 --remote？** 默认是本地模拟，加 --remote 才上传到云端
-
-```bash
-# 生成唯一文章 ID
-ARTICLE_ID=$(date +%Y%m%d%H%M%S)
-
-# 上传到远程 R2（必须加 --remote！）
-wrangler r2 object put ${R2_BUCKET}/articles/${ARTICLE_ID}/cover.png \
-  --file=/tmp/wechat_cover.png --remote
-
-wrangler r2 object put ${R2_BUCKET}/articles/${ARTICLE_ID}/img1.png \
-  --file=/tmp/wechat_img1.png --remote
-
-wrangler r2 object put ${R2_BUCKET}/articles/${ARTICLE_ID}/img2.png \
-  --file=/tmp/wechat_img2.png --remote
-
-wrangler r2 object put ${R2_BUCKET}/articles/${ARTICLE_ID}/img3.png \
-  --file=/tmp/wechat_img3.png --remote
-```
-
-**R2 图片 URL 格式**：
-```
-${R2_PUBLIC_URL}/articles/{ARTICLE_ID}/cover.png
-```
-
-**注意**：R2 的图片 URL 不能直接用在公众号文章里！公众号会过滤外部图片。这就是为什么还需要 Step 6。
-
----
-
-### Step 6: 上传图片到微信服务器
+### Step 5: 上传图片到微信服务器
 
 **设计思路**：
 - **为什么还要上传到微信？** 公众号文章只能显示 `mmbiz.qpic.cn` 域名的图片，外部图片会被过滤
@@ -436,7 +394,7 @@ img1_url = img_resp.json()["url"]
 
 ---
 
-### Step 7: 转换 HTML 并发布草稿
+### Step 6: 转换 HTML 并发布草稿
 
 **设计思路**：
 - **为什么要转 HTML？** 公众号不支持 Markdown，只接受 HTML
@@ -499,7 +457,7 @@ result = response.json()
 
 ---
 
-### Step 8: 提示用户检查
+### Step 7: 提示用户检查
 
 **设计思路**：
 - **为什么要提示检查？** 自动发布的是草稿，需要人工确认后才能正式发布
@@ -515,12 +473,6 @@ result = response.json()
 - 标题：xxx
 - 摘要：xxx
 - 风格：xxx
-
-🖼️ 图片（R2 备份，可在其他平台使用）
-- 封面：https://pub-xxx.r2.dev/articles/xxx/cover.png
-- 配图1：https://pub-xxx.r2.dev/articles/xxx/img1.png
-- 配图2：https://pub-xxx.r2.dev/articles/xxx/img2.png
-- 配图3：https://pub-xxx.r2.dev/articles/xxx/img3.png
 
 📤 公众号
 - 草稿 ID：xxx
@@ -554,4 +506,4 @@ result = response.json()
 3. **中文编码**：JSON 必须用 `ensure_ascii=False`
 4. **标题长度**：最多 64 字节（约 21 个中文字符）
 5. **access_token**：有效期 2 小时，每次需重新获取
-6. **R2 上传**：必须加 `--remote` 参数上传到远程
+6. **定时任务**：自动运行时不要提问，直接按参数/默认值执行

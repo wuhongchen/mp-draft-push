@@ -86,7 +86,16 @@ publish_article "标题" "$content_html" "封面图 prompt" "摘要"
 
 OpenClaw 自带 Cron（需要你的 OpenClaw Gateway 常驻运行）。
 
-示例：每天 09:00（上海时区）触发一次发布：
+推荐做法：把「默认配置」固定在 Skill 里，Cron 只负责每天触发一次；当你想改主题/风格/口吻时，再在触发消息里追加说明即可。
+
+默认配置（可在 `SKILL.md` 里改）：
+
+- 主题：AI工具
+- 风格：github
+- 配图：封面 + 3 张
+- 作者：田威 AI
+
+示例：每天 09:00（上海时区）触发一次发布（使用默认配置）：
 
 ```bash
 openclaw cron add \
@@ -94,7 +103,18 @@ openclaw cron add \
   --cron "0 9 * * *" \
   --tz "Asia/Shanghai" \
   --session isolated \
-  --message "发布AI热点；主题=AI工具；风格=github；配图=封面+3张；作者=田威 AI；不要提问，直接执行"
+  --message "发布AI热点；不要提问，直接执行"
+```
+
+临时覆盖默认配置（只要把需求“说出来”即可）：
+
+```bash
+openclaw cron add \
+  --name "wechat-ai-daily" \
+  --cron "0 9 * * *" \
+  --tz "Asia/Shanghai" \
+  --session isolated \
+  --message "发布AI热点；主题=护理；风格=purple；配图=仅封面；写得更科普一些；不要提问，直接执行"
 ```
 
 查看/管理：

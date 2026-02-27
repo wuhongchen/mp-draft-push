@@ -1,125 +1,126 @@
-# wechat-ai-publisher (Skill)
+# mp-draft-push (Skill)
 
-自动采集 AI 热点，撰写公众号文章，生成配图并发布到微信公众号草稿箱。
+> 最小化微信公众号发布技能：接收**现成的文章内容**，上传封面图，发布到草稿箱。
 
-本仓库已移除所有硬编码的密钥/Token/本地路径；你需要通过环境变量自行配置（见下文）。
+不负责内容采集、AI 写作或图片生成，只做"最后一公里"。
+
+---
+
+## 目录结构
+
+```
+wechat-ai-publisher/
+├── SKILL.md          # 技能定义（AI 助手读取）
+├── scripts.sh        # 辅助脚本（bash/zsh 均可用）
+├── .env.example      # 环境变量模板
+├── styles.json       # 微信公众号 HTML 内联样式参考
+└── examples/
+    └── nursing-tech-article.md   # 示例文章
+```
+
+---
 
 ## 安装
 
-把整个目录放到你的 Skills 目录下（任选其一）：
+将整个目录放到 AI 工具的 Skills 目录下：
 
-- `~/.codex/skills/wechat-ai-publisher/`
-- `$CODEX_HOME/skills/wechat-ai-publisher/`
-- `~/.claude/skills/wechat-ai-publisher/`（Claude Code / Cloud Code）
-- `~/.gemini/skills/wechat-ai-publisher/`（Gemini：建议约定此路径，具体以你的工具为准）
-- `~/.openclaw/workspace/skills/wechat-ai-publisher/`（OpenClaw 默认 workspace）
-- `~/.openclaw/skills/wechat-ai-publisher/`（OpenClaw 全局 skills）
+| AI 工具 | Skills 路径 |
+|---------|------------|
+| Codex | `~/.codex/skills/wechat-publisher/` |
+| Claude Code | `~/.claude/skills/wechat-publisher/` |
+| Gemini | `~/.gemini/skills/wechat-publisher/` |
+| OpenClaw | `~/.openclaw/workspace/skills/wechat-publisher/` |
+
+---
 
 ## 配置
 
-1) 复制配置模板：
-
 ```bash
 cp .env.example .env
+# 编辑 .env 填入凭证
+set -a; source .env; set +a
 ```
 
-2) 在 `.env` 填入以下变量：
+| 变量 | 必填 | 说明 |
+|------|------|------|
+| `WECHAT_APPID` | ✅ | 公众号后台 AppID |
+| `WECHAT_SECRET` | ✅ | 公众号后台 AppSecret |
+| `WECHAT_AUTHOR` | ❌ | 文章作者字段（默认：`koo AI`） |
+| `DEFAULT_COVER_URL` | ❌ | 无封面图时的兜底图片 URL |
 
-- `WECHAT_APPID` / `WECHAT_SECRET`：公众号后台获取（用于换取 `access_token`）。
-- `REPLICATE_API_KEY`：用于生成配图（Replicate）。
-- `WECHAT_AUTHOR`（可选）：文章作者字段（默认：`田威 AI`）。
-- `DEFAULT_COVER_URL`（可选）：图片生成失败时的兜底封面 URL。
+> AppID 和 AppSecret 在**微信公众号后台 → 设置与开发 → 基本配置**中获取。
 
-3) 让环境变量生效（示例）：
-
-```bash
-set -a
-source .env
-set +a
-```
+---
 
 ## 依赖
 
-辅助脚本 `scripts.sh` 需要以下命令可用：
+```bash
+brew install jq   # 如未安装
+# bash curl 通常 macOS 已自带
+```
 
-- `bash`, `curl`, `jq`
+---
 
-Skill 运行环境（采集内容）依赖你已配置好对应工具/API：
+## 使用方式
 
-- `mcp__tavily__tavily-search` / `mcp__tavily__tavily-extract`
-- `mcp__exa__web_search_exa`
+### 方式一：通过 AI 助手触发（推荐）
 
-本仓库不包含这些服务的 API Key，你需要在自己的 Agent/IDE/CLI 工具里按其官方方式配置。
+触发词：**"发布文章"、"发布到草稿箱"、"publish to draft"**
 
-## 使用（辅助脚本）
+对话示例：
 
-> 注意：`scripts.sh` 只是便捷脚本；Skill 本体逻辑在 `SKILL.md`。
+> 帮我发布这篇文章到草稿箱：
+> - 标题：XXX
+> - 摘要：XXX
+> - 封面图：/path/to/cover.png
+> - 正文 HTML：`<p>内容</p>`
 
-示例文章（科普/护理/科技风格）：`examples/nursing-tech-article.md`
-
-加载脚本：
+### 方式二：直接调用脚本
 
 ```bash
 source ./scripts.sh
+
+# 1. 获取 token
+TOKEN=$(get_wechat_token)
+
+# 2. 上传封面图（返回 media_id）
+upload_wechat_image "$TOKEN" "/path/to/cover.png"
+
+# 3. 创建草稿（draft.json 见下方格式）
+create_draft "$TOKEN" "/path/to/draft.json"
 ```
 
-常用函数：
+**draft.json 格式**：
 
-- `get_wechat_token`
-- `generate_image "<prompt>" ["16:9"]`
-- `upload_to_r2 <local_path> <remote_path>`
-- `publish_article "<title>" "<content_html>" "<cover_prompt>" "<digest>"`
-
-参数建议：`content_html` 尽量从文件读取，避免 shell 引号/换行转义问题：
-
-```bash
-content_html=$(cat ./content.html)
-publish_article "标题" "$content_html" "封面图 prompt" "摘要"
+```json
+{
+  "articles": [{
+    "title": "文章标题",
+    "author": "koo AI",
+    "digest": "文章摘要",
+    "content": "<section style=\"...\">正文 HTML</section>",
+    "thumb_media_id": "上一步上传封面图返回的 media_id",
+    "need_open_comment": 1,
+    "only_fans_can_comment": 0
+  }]
+}
 ```
+
+> **注意**：`thumb_media_id` 是必填字段，不能为空字符串。
+
+---
+
+## 注意事项
+
+- `.env` 已加入 `.gitignore`，不会被提交到仓库
+- 文章内图片只能使用微信返回的 `mmbiz.qpic.cn` 域名 URL
+- HTML 样式必须全部内联，微信会过滤 `<style>` 标签
+- 标题最多 64 字节（约 21 个中文字符）
+- `access_token` 有效期 2 小时，每次调用脚本都会重新获取
+
+---
 
 ## 安全说明
 
-- 不要把 `.env` 提交到仓库；本仓库已通过 `.gitignore` 忽略它。
-- 任何线上发布前，建议在公众号后台/接口调用白名单中配置好服务器 IP（如有要求）。
-
-## OpenClaw：每天定时发布（24 小时循环）
-
-OpenClaw 自带 Cron（需要你的 OpenClaw Gateway 常驻运行）。
-
-推荐做法：把「默认配置」固定在 Skill 里，Cron 只负责每天触发一次；当你想改主题/风格/口吻时，再在触发消息里追加说明即可。
-
-默认配置（可在 `SKILL.md` 里改）：
-
-- 主题：AI工具
-- 风格：github
-- 配图：封面 + 3 张
-- 作者：田威 AI
-
-示例：每天 09:00（上海时区）触发一次发布（使用默认配置）：
-
-```bash
-openclaw cron add \
-  --name "wechat-ai-daily" \
-  --cron "0 9 * * *" \
-  --tz "Asia/Shanghai" \
-  --session isolated \
-  --message "发布AI热点；不要提问，直接执行"
-```
-
-临时覆盖默认配置（只要把需求“说出来”即可）：
-
-```bash
-openclaw cron add \
-  --name "wechat-ai-daily" \
-  --cron "0 9 * * *" \
-  --tz "Asia/Shanghai" \
-  --session isolated \
-  --message "发布AI热点；主题=护理；风格=purple；配图=仅封面；写得更科普一些；不要提问，直接执行"
-```
-
-查看/管理：
-
-```bash
-openclaw cron list
-openclaw cron delete --name "wechat-ai-daily"
-```
+- 不要将 `.env` 提交到版本库
+- 建议在公众号后台配置 IP 白名单（如有要求）
